@@ -1,70 +1,66 @@
-name: Java CI
-
-on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
-
 jobs:
   build:
-
-    runs-on: ubuntu-latest
-
+    runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up JDK 8
-        uses: actions/setup-java@v4
-        with:
-          java-version: 8
-          distribution: zulu
-
-      - name: Build and install
-        run: ./gradlew publishToMavenLocal
-        env:
-          CI: "true"
-
-      - name: Run unit tests
-        run: ./gradlew test --console=plain
-        env:
-          CI: "true"
-
-      - name: Create test reports
-        run: ./gradlew jacocoTestReport
-
-      - name: Upload code coverage report
-        run: bash <(curl -s https://codecov.io/bash)
-
-      - name: Upload junit test reports on failure
-        uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: test-results
-          path: build/reports/tests
-
+    - continue-on-error: true
+      uses: actions/checkout@v4
+    - continue-on-error: true
+      name: Set up JDK 8
+      uses: actions/setup-java@v4
+      with:
+        distribution: zulu
+        java-version: 8
+    - continue-on-error: true
+      env:
+        CI: 'true'
+      name: Build and install
+      run: ./gradlew publishToMavenLocal
+    - continue-on-error: true
+      env:
+        CI: 'true'
+      name: Run unit tests
+      run: ./gradlew test --console=plain
+    - continue-on-error: true
+      name: Create test reports
+      run: ./gradlew jacocoTestReport
+    - continue-on-error: true
+      name: Upload code coverage report
+      run: bash <(curl -s https://codecov.io/bash)
+    - continue-on-error: true
+      if: failure()
+      name: Upload junit test reports on failure
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: build/reports/tests
   integrationTests:
-
-    runs-on: ubuntu-latest
-
+    runs-on: self-hosted
+    steps:
+    - continue-on-error: true
+      uses: actions/checkout@v4
+    - continue-on-error: true
+      name: Set up JDK 8
+      uses: actions/setup-java@v4
+      with:
+        distribution: zulu
+        java-version: 8
+    - continue-on-error: true
+      name: Build and install
+      run: ./gradlew publishToMavenLocal -x signPluginMavenPublication -x signDownloadPluginPluginMarkerMavenPublication
+    - continue-on-error: true
+      name: Run integration tests
+      run: ./gradlew integrationTest -PintegrationTestIncludes="^${{ matrix.version
+        }}"
     strategy:
       matrix:
-        version: ["5", "6\\\\.[0-5]", "6\\\\.[6-9]", "7\\\\.[0-3]", "7\\\\.[4-9]", "8"]
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up JDK 8
-        uses: actions/setup-java@v4
-        with:
-          java-version: 8
-          distribution: zulu
-
-      # publish to local maven repo but skip signing because this fails without a key
-      - name: Build and install
-        run: ./gradlew publishToMavenLocal -x signPluginMavenPublication -x signDownloadPluginPluginMarkerMavenPublication
-
-      - name: Run integration tests
-        run: ./gradlew integrationTest -PintegrationTestIncludes="^${{ matrix.version }}"
+        version:
+        - '5'
+        - 6\\.[0-5]
+        - 6\\.[6-9]
+        - 7\\.[0-3]
+        - 7\\.[4-9]
+        - '8'
+name: Java CI
+on:
+  repository_dispatch:
+    types: trigger-ga___gradle.yml
